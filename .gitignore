@@ -1,0 +1,26 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+
+
+# Terraform plan files
+*.tfplan
+tfplan
+
+# Private keys
+*.pem
+*.key
+
+# Terraform variable files - pot conține date sensibile
+*.tfvars
+*.tfvars.json
+
+# Logs
+*.log
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
