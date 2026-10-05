@@ -8,10 +8,6 @@
 *.tfplan
 tfplan
 
-# Private keys
-*.pem
-*.key
-
 # Terraform variable files - pot conține date sensibile
 *.tfvars
 *.tfvars.json
