@@ -14,16 +14,24 @@ resource "aws_vpc" "main" {
 
 resource "aws_internet_gateway" "main" {
   vpc_id = aws_vpc.main.id
+
+  tags = {
+    Name = "${var.vpc_name}-igw"
+  }
 }
 
-resource "aws_subnet" "public" {
+resource "aws_subnet" "eks" {
+  count = length(var.eks_subnet_cidrs)
+
   vpc_id                  = aws_vpc.main.id
-  cidr_block              = var.public_subnet_cidr
-  availability_zone       = data.aws_availability_zones.available.names[0]
+  cidr_block              = var.eks_subnet_cidrs[count.index]
+  availability_zone       = data.aws_availability_zones.available.names[count.index]
   map_public_ip_on_launch = true
 
   tags = {
-    Name = "${var.vpc_name}-public-subnet"
+    Name = "${var.vpc_name}-eks-subnet-${count.index + 1}"
+
+    "kubernetes.io/role/elb" = "1"
   }
 }
 
@@ -34,41 +42,15 @@ resource "aws_route_table" "public" {
     cidr_block = "0.0.0.0/0"
     gateway_id = aws_internet_gateway.main.id
   }
+
   tags = {
     Name = "${var.vpc_name}-public-rt"
   }
 }
 
-resource "aws_route_table_association" "public" {
-  subnet_id      = aws_subnet.public.id
+resource "aws_route_table_association" "eks" {
+  count = length(aws_subnet.eks)
+
+  subnet_id      = aws_subnet.eks[count.index].id
   route_table_id = aws_route_table.public.id
-}
-
-resource "aws_security_group" "ec2_eks_admin" {
-  name        = var.sg_name
-  description = "Security group for EKS admin host"
-  vpc_id      = aws_vpc.main.id
-  tags = {
-    Name = var.sg_name
-  }
-}
-
-resource "aws_vpc_security_group_ingress_rule" "eks_admin_ssh" {
-  security_group_id = aws_security_group.ec2_eks_admin.id
-
-  description = "SSH from administrator IP"
-  ip_protocol = "tcp"
-  from_port   = 22
-  to_port     = 22
-
-  cidr_ipv4 = var.admin_ip
-}
-
-resource "aws_vpc_security_group_egress_rule" "eks_admin_all" {
-  security_group_id = aws_security_group.ec2_eks_admin.id
-
-  description = "Allow all outbound traffic"
-  ip_protocol = "-1"
-
-  cidr_ipv4 = "0.0.0.0/0"
 }
